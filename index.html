@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rezepteingabe</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <script src="//cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js"></script>  
+    <script src="js/pouchdb.find.js"></script>
+    <script type="module" src="js/app.js"></script>
+</head>
+
+<body>
+    <template id="produkt-form-template">
+        <!--Step Indicators-->
+        <div class="flex items-stretch p-2" @mounted="init()">
+            <h4>Produkt hinzufügen</h4>
+            <div class="p-2">
+                <div class="pb-2">
+                    <label for="prodName">Name</label>
+                    <input placeholder="Name" class="form-control" type="text" v-model="name" id="prodName" required>
+                </div>
+                <div class="pb-2">
+                    <label for="prodGewicht">Gewicht</label>
+                    <input placeholder="Gewicht" class="form-control" type="text" v-model="gewicht" id="prodGewicht"
+                        required>
+                </div>
+                <div class="pb-2">
+                    <label for="prodPreis">Preis</label>
+                    <input placeholder="Preis" class="form-control" type="text" v-model="preis" id="prodPreis" required>
+                </div>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" type="submit" @click="insertProdukt">Hinzufügen</button>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" @click="produktAbbrechen">Abbrechen</button>
+                </div>
+            </div>
+
+            <!--        <div id="produktList" class="pt-4">
+            <ol>
+                <li v-for="produkt of produkte" :idx="produkt._id">
+                    {{ produkt._id }} , {{ produkt.gewicht}} Gramm, {{produkt.preis}} Cent
+                    <a class="btn btn-primary" @click="edit(produkt._id)"><i class="bi-pencil"></i></a>
+                </li>
+            </ol>
+
+        </div>-->
+        </div>
+    </template>
+    <template id="material-form-template">
+        <!--Step Indicators-->
+        <div class="flex items-stretch p-2" @mounted="init()">
+            <h4>Material hinzufügen</h4>
+            <div class="p-2">
+                <div class="pb-2">
+                    <label for="matName">Name</label>
+                    <input placeholder="Name" class="form-control" type="text" v-model="name" id="matName" required>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" type="submit" @click="insertMaterial">Hinzufügen</button>
+                </div>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" @click="materialAbbrechen">Abbrechen</button>
+                </div>
+                
+            </div>
+
+            <!--        <div id="materialList" class="pt-4">
+            <ol>
+                <li v-for="material of materialien" :idx="material._id">
+                    {{ material._id }} 
+                    <a class="btn btn-primary" @click="edit(material._id)"><i class="bi-pencil"></i></a>
+                </li>
+            </ol>
+
+        </div>-->
+        </div>
+    </template>
+    <div v-scope @mounted="onMounted()" id="Rezeptformular" class="p-2">
+        <div id="notifications"></div>
+        <div v-if="!addProdukt && !addMaterial"> <!--Zukünftige Rezept Formular Komponente / Template-->
+            
+            <div class="input-group">
+                <span class="input-group-text">Rezeptname</span>
+                <input v-model="fRezeptName" class="form-control" name="Name" id="rezeptname" placeholder="Name">
+                
+            </div>
+            <div v-if="curRezept.anleitung.schritte.length > 0" class="p-2">
+                <p class="h4 pt-3">Anleitung</p>
+                <div v-for="aSchritt of curRezept.anleitung.schritte">
+                    <div class="p-2" id="stepForm">
+                        <div class="row gy-2">
+                            <div class="input-group">
+                                <span class="input-group-text">Arbeitsschritt {{ aSchritt.nr }}</span>
+                                <input v-model="aSchritt.text" class="form-control"
+                                    @input="setSchrittChanged(aSchritt.nr)">
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text">Dauer</span>
+                                <input v-model="aSchritt.zeit.dauer" class="form-control" type="number" id="dauer"
+                                    name="dauer" placeholder="Dauer in Minuten">
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text">Typ</span>
+                                <select :value="aSchritt.zeit.typ" class="form-select" name="Typ" id="Gartyp">
+                                    <option value="kochen">kochen</option>
+                                    <option value="backen">backen</option>
+
+                                </select>
+                            </div>
+                            <div>
+                                Materialien: {{ aSchritt.materialien.map(m => m._id).join(", ") }}
+                            </div>
+                            <div class="input-group">
+                                <select @change="onMaterialChange(event, aSchritt.nr)" v-model="fMaterial"
+                                    class="form-select">
+                                    <option value="" disabled selected hidden >Material auswählen</option>
+                                    <option v-for="m of materialien" :idx="m._id">
+                                        {{ m._id }}
+                                    </option>
+                                    <option label="Neues Material hinzufügen" :value="0" />
+                                </select>
+                            </div>
+                            <div>
+                                Produkte: {{ aSchritt.produkte.map(p => p._id).join(", ") }}
+                            </div>
+                            <div class="input-group">
+                                <select @change="onProduktChange(event, aSchritt.nr)" v-model="fProdukt"
+                                    class="form-select">
+                                    <option value="" selected hidden>Produkt auswählen</option>
+                                    <option v-for="p of produkte" :idx="p._id">
+                                        {{ p._id }}
+                                    </option>
+                                    <option label="Neues Produkt hinzufügen" :value="0" />
+                                </select>
+                            </div>
+                        </div>
+                        <button :disabled="schrittUnchanged(aSchritt.nr)" type="button"
+                            class="btn btn-outline-success btn-sm" @click="upsertRezept()">Änderung speichern
+                        </button>
+                    </div>
+                    <hr>
+                </div>
+                <button type="button" class="btn btn-outline-success btn-sm" @click="addStep()">Schritt
+                    hinzufügen</button>
+            </div>
+        </div>
+        <div v-if="addProdukt">
+            <div ref="produktform"
+                v-scope="produktFormKomponente({ stepsCount: 12, name: '', gewicht: 0, preis: 0, pdb: PouchDB, self: this })"
+                @finished="produktHinzugefuegt"
+                @canceled="addProdukt=false"></div>
+        </div>
+        <div v-if="addMaterial">
+            <div ref="materialform"
+                v-scope="materialFormKomponente({ stepsCount: 12, name: '', pdb: PouchDB, self: this })"
+                @finished="materialHinzugefuegt"
+                @canceled="addMaterial=false"></div>
+        </div>
+        <button class="btn btn-primary" type="submit" :disabled="!fRezeptName" @click="upsertRezept(false)">Speichern</button>
+
+        <div id="dbCount"></div>
+    </div>
+    
+</body>
+
+</html>
