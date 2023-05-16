@@ -1,3 +1,3 @@
 # RezepteApp
 
-Using petiteVue
+Using petiteVue & Bootstrap
