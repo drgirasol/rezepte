@@ -14,6 +14,31 @@
 </head>
 
 <body>
+    <template id="schritt-produkt-form-template">
+        <!--Step Indicators-->
+        <div class="flex items-stretch p-2" @mounted="init()">
+            <h4>Produktangaben anpassen</h4>
+            <div class="p-2">
+                <div class="pb-2">
+                    <label for="prodName">Name</label>
+                    <input readonly placeholder="Name" class="form-control" type="text" v-model="schrittProdukt.produktId" required>
+                </div>
+                <div class="pb-2">
+                    <input v-model="schrittProdukt.preis" class="form-control" type="number" placeholder="Preis in Cent">
+                </div>
+                <div class="pb-2">
+                    <input v-model="schrittProdukt.gewicht" class="form-control" type="number" placeholder="Gewicht in Gramm">
+                </div>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" type="submit" @click="insertProdukt">Hinzufügen</button>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" @click="schrittProduktAbbrechen">Abbrechen</button>
+                </div>
+            </div>
+        </div>
+    </template>
     <template id="produkt-form-template">
         <!--Step Indicators-->
         <div class="flex items-stretch p-2" @mounted="init()">
@@ -22,15 +47,6 @@
                 <div class="pb-2">
                     <label for="prodName">Name</label>
                     <input placeholder="Name" class="form-control" type="text" v-model="name" id="prodName" required>
-                </div>
-                <div class="pb-2">
-                    <label for="prodGewicht">Gewicht</label>
-                    <input placeholder="Gewicht" class="form-control" type="text" v-model="gewicht" id="prodGewicht"
-                        required>
-                </div>
-                <div class="pb-2">
-                    <label for="prodPreis">Preis</label>
-                    <input placeholder="Preis" class="form-control" type="text" v-model="preis" id="prodPreis" required>
                 </div>
                 <div class="d-grid gap-2">
                     <button class="btn btn-primary" type="submit" @click="insertProdukt">Hinzufügen</button>
@@ -153,13 +169,19 @@
         </div>
         <div v-if="addProdukt">
             <div ref="produktform"
-                v-scope="produktFormKomponente({ stepsCount: 12, name: '', gewicht: 0, preis: 0, pdb: PouchDB, self: this })"
+                v-scope="produktFormKomponente({ name: '', pdb: PouchDB, self: this })"
                 @finished="produktHinzugefuegt"
                 @canceled="addProdukt=false"></div>
         </div>
+         <div v-if="addSchrittProdukt">
+            <div ref="schrittProduktform"
+                v-scope="schrittProduktFormKomponente({ produkt: this.curProdukt, pdb: PouchDB, self: this })"
+                @finished="schrittProduktHinzugefuegt"
+                @canceled="addSchrittProdukt=false"></div>
+        </div>
         <div v-if="addMaterial">
             <div ref="materialform"
-                v-scope="materialFormKomponente({ stepsCount: 12, name: '', pdb: PouchDB, self: this })"
+                v-scope="materialFormKomponente({ name: '', pdb: PouchDB, self: this })"
                 @finished="materialHinzugefuegt"
                 @canceled="addMaterial=false"></div>
         </div>
