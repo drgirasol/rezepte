@@ -42,6 +42,7 @@ createApp({
             gewicht: 0
         }
     }
+    curProdukt: null,
     produkt: {
         _id: "",
         qualitaet: 0,
@@ -62,12 +63,91 @@ createApp({
     asTyp: "",
     schrittChanged: {},
     saved: false,
-    produktFormKomponente(props) {
+    schrittProduktFormKomponente(props) {
         return {
             PouchDB: props.pdb,
             self: props.self,
             dbProdukte: null,
-            stepsCount: props.stepsCount,
+            schrittProdukt: {
+                produktId: props.produkt._id,
+                preis: 0,
+                gewicht: 0
+            }
+            schritt: {},
+            $template: "#schritt-produkt-form-template",
+            edit(id) {
+                const curProdukt = this.produkte.find(p => p._id === id)
+                console.log(curProdukt)
+                this.preis = curProdukt.preis
+            },
+            async updateProdukte() {
+                const result = await this.dbProdukte.allDocs({
+                    include_docs: true,
+                });
+                console.log("Produkte:", result);
+                this.produkte = result.rows.map(r => r.doc);
+            },
+            async insertProdukt() {
+                let produkt = {
+                    _id: this.name,
+                    date: new Date().toISOString(),
+                };
+                try {
+                    const response = await this.dbProdukte.put(produkt);
+                    console.log("Eintrag gespeichert", response);
+                    await this.updateProdukte();
+                    // toDo: emit event from component as demonstrated here: https://jsfiddle.net/nooooooom/fsk7bm6j/7/
+                    // => goal: after the product was inserted, include it in the rezept and close the product add form
+                    this.$refs.produktform.dispatchEvent(
+                        new CustomEvent('finished', { bubbles: true, detail: produkt })
+                    )
+                } catch (err) {
+                    console.log(err);
+                }
+            },
+            produktAbbrechen() {
+                this.$refs.produktform.dispatchEvent(
+                    new CustomEvent('canceled', { bubbles: true, detail: null })
+                )
+
+            },
+            async upsertProdukt() {
+                let produkt;
+                try {
+                    produkt = await this.dbProdukte.get(this.name);
+                } catch (err) {
+                    if (err.name === "not_found") {
+                        // falls der Eintrag dort nicht existiert
+                        produkt = {
+                            // gib einen neuen Eintrag zurück, der dann in die DB geschrieben werden kann
+                            _id: this.name,
+                            date: new Date().toISOString(),
+                        };
+                    } else {
+                        // hm, some other error
+                        throw err;
+                    }
+                }
+                try {
+                    const response = await this.dbProdukte.put(produkt);
+                    console.log("Eintrag gespeichert", response);
+                    await this.updateProdukte();
+                } catch (err) {
+                    console.log(err);
+                }
+            },
+            async init() {
+                this.dbProdukte = new PouchDB("Produkte");
+                await this.updateProdukte();
+                console.log("Komponente mounted", this.produkte);
+            },
+        };
+    },
+    produktFormKomponente(props) {
+        return {
+            PouchDB: props.pdb,
+            self: props.self,
+            dbProdukte: null,            
             name: props.name
             produkte: [],
             $template: "#produkt-form-template",
@@ -145,7 +225,6 @@ createApp({
             PouchDB: props.pdb,
             self: props.self,
             dbMaterialien: null,
-            stepsCount: props.stepsCount,
             name: props.name,
             materialien: [],
             $template: "#material-form-template",
@@ -166,7 +245,6 @@ createApp({
                 let material = {
                     _id: this.name,
                     date: new Date().toISOString(),
-
                 };
                 try {
                     const response = await this.dbMaterialien.put(material);
@@ -225,7 +303,9 @@ createApp({
     async produktHinzugefuegt(data) {
         console.log(data)
         this.addProdukt = false
-        this.curRezept.anleitung.schritte[this.curSchritt - 1].produkte.push(data.detail);
+        this.addSchrittProdukt = true
+        this.curProdukt = data.detail
+        // this.curRezept.anleitung.schritte[this.curSchritt - 1].produkte.push(data.detail);
         // await this.upsertRezept();
     },
     async materialHinzugefuegt(data) {
