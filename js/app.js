@@ -24,9 +24,9 @@ createApp({
     },
     curRezept: {},
     curSchritt: 1,
-    schritt: () => {
+    schritt: (nr="") => {
         return {
-            nr: "",
+            nr: nr,
             text: "",
             zeit: {
                 dauer: "",
@@ -64,6 +64,15 @@ createApp({
     asTyp: "",
     schrittChanged: {},
     saved: false,
+    getProduktSelection(schritt) {
+        console.log(schritt)
+        if (this.curRezept.anleitung) {
+            const included = this.curRezept.anleitung.schritte[schritt-1].produkte.map(p => p.produktId)
+            return this.produkte.filter(p => included.indexOf(p._id) === -1)
+        } else {
+            return []
+        }
+    },
     schrittProduktFormKomponente(props) {
         return {
             PouchDB: props.pdb,
@@ -76,59 +85,28 @@ createApp({
             },
             schritt: props.schritt,
             $template: "#schritt-produkt-form-template",
-            edit(id) {
-                const curProdukt = this.produkte.find(p => p._id === id)
-                console.log(curProdukt)
-                this.preis = curProdukt.preis
-            },
-            async updateProdukte() {
-                const result = await this.dbProdukte.allDocs({
-                    include_docs: true,
-                });
-                console.log("Produkte:", result);
-                this.produkte = result.rows.map(r => r.doc);
-            },
+            edit(id) {},
             async insertSchrittProdukt() {
                 // Prüfen ob Preis und Gewicht angegeben wurden
                 console.log("schrittProdukt hinzufügen", this.schrittProdukt)
                 props.rezept.anleitung.schritte[props.schritt-1].produkte.push(this.schrittProdukt)
+                this.$refs.schrittProduktform.dispatchEvent(
+                    new CustomEvent('finished', { bubbles: true, detail: null })
+                )
             },
             schrittProduktAbbrechen() {
                 this.$refs.schrittProduktform.dispatchEvent(
                     new CustomEvent('canceled', { bubbles: true, detail: null })
                 )
             },
-            async upsertProdukt() {
-                let produkt;
-                try {
-                    produkt = await this.dbProdukte.get(this.name);
-                } catch (err) {
-                    if (err.name === "not_found") {
-                        // falls der Eintrag dort nicht existiert
-                        produkt = {
-                            // gib einen neuen Eintrag zurück, der dann in die DB geschrieben werden kann
-                            _id: this.name,
-                            date: new Date().toISOString(),
-                        };
-                    } else {
-                        // hm, some other error
-                        throw err;
-                    }
-                }
-                try {
-                    const response = await this.dbProdukte.put(produkt);
-                    console.log("Eintrag gespeichert", response);
-                    await this.updateProdukte();
-                } catch (err) {
-                    console.log(err);
-                }
-            },
             async init() {
-                this.dbProdukte = new PouchDB("Produkte");
-                await this.updateProdukte();
-                console.log("Komponente mounted", this.produkte);
+                console.log("Komponente mounted");
             },
         };
+    },
+    async schrittProduktHinzugefuegt(data) {
+        this.curProdukt = null
+        this.addSchrittProdukt = false
     },
     produktFormKomponente(props) {
         return {
@@ -206,6 +184,15 @@ createApp({
                 console.log("Komponente mounted", this.produkte);
             },
         };
+    },
+    async produktHinzugefuegt(data) {
+        console.log(data)
+        this.addProdukt = false
+        this.curProdukt = data.detail
+        this.fProdukt = ""
+        this.addSchrittProdukt = true
+        // this.curRezept.anleitung.schritte[this.curSchritt - 1].produkte.push(data.detail);
+        // await this.upsertRezept();
     },
     //
     materialFormKomponente(props) {
@@ -288,14 +275,6 @@ createApp({
             },
         };
     },
-    async produktHinzugefuegt(data) {
-        console.log(data)
-        this.addProdukt = false
-        this.curProdukt = data.detail
-        this.addSchrittProdukt = true
-        // this.curRezept.anleitung.schritte[this.curSchritt - 1].produkte.push(data.detail);
-        // await this.upsertRezept();
-    },
     async materialHinzugefuegt(data) {
         console.log(data)
         this.addMaterial = false
@@ -312,7 +291,7 @@ createApp({
         await this.update("Produkte")
         console.log("Datenbanken initialisiert...", this.rezept());
         this.curRezept = this.rezept()
-        this.curRezept.anleitung.schritte.push(this.schritt())
+        this.curRezept.anleitung.schritte.push(this.schritt(1))
     },
     async update(dbName) {
         const result = await this["db" + dbName].allDocs({

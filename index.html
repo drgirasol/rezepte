@@ -31,12 +31,9 @@
                     <label for="prodName">Gewicht</label>
                     <input v-model="schrittProdukt.gewicht" class="form-control" type="number" placeholder="Gewicht in Gramm">
                 </div>
-                <div class="d-grid gap-2">
-                    <button class="btn btn-primary" type="submit" @click="insertSchrittProdukt">Hinzufügen</button>
-                </div>
-                
-                <div class="d-grid gap-2">
-                    <button class="btn btn-primary" @click="schrittProduktAbbrechen">Abbrechen</button>
+                <div class="row">
+                    <button class="col btn btn-primary" type="submit" @click="insertSchrittProdukt">Übernehmen</button>
+                    <button class="col btn btn-primary" @click="schrittProduktAbbrechen">Abbrechen</button>
                 </div>
             </div>
         </div>
@@ -102,12 +99,10 @@
     </template>
     <div v-scope @mounted="onMounted()" id="Rezeptformular" class="p-2">
         <div id="notifications"></div>
-        <div v-if="!addProdukt && !addMaterial"> <!--Zukünftige Rezept Formular Komponente / Template-->
-            
+        <div v-if="!addProdukt && !addMaterial && !addSchrittProdukt"> <!--Zukünftige Rezept Formular Komponente / Template-->
             <div class="input-group">
                 <span class="input-group-text">Rezeptname</span>
                 <input v-model="fRezeptName" class="form-control" name="Name" id="rezeptname" placeholder="Name">
-                
             </div>
             <div v-if="curRezept.anleitung && curRezept.anleitung.schritte.length > 0" class="p-2">
                 <p class="h4 pt-3">Anleitung</p>
@@ -129,7 +124,6 @@
                                 <select :value="aSchritt.zeit.typ" class="form-select" name="Typ" id="Gartyp">
                                     <option value="kochen">kochen</option>
                                     <option value="backen">backen</option>
-
                                 </select>
                             </div>
                             <div>
@@ -151,11 +145,11 @@
                             <div class="input-group">
                                 <select @change="onProduktChange(event, aSchritt.nr)" v-model="fProdukt"
                                     class="form-select">
-                                    <option value="" selected hidden>Produkt auswählen</option>
-                                    <option v-for="p of produkte" :idx="p._id">
+                                    <option value="" label="Produkt auswählen" selected hidden></option>
+                                    <option v-for="p of getProduktSelection(aSchritt.nr)" :idx="p._id">
                                         {{ p._id }}
                                     </option>
-                                    <option label="Neues Produkt hinzufügen" :value="0" />
+                                    <option label="Neues Produkt hinzufügen" value="0"></option>
                                 </select>
                             </div>
                         </div>
@@ -179,7 +173,8 @@
             <div ref="schrittProduktform"
                 v-scope="schrittProduktFormKomponente({ produkt: curProdukt, schritt: curSchritt, rezept: curRezept, pdb: PouchDB, self: this })"
                 @finished="schrittProduktHinzugefuegt"
-                @canceled="addSchrittProdukt=false"></div>
+                @canceled="addSchrittProdukt=false">
+            </div>
         </div>
         <div v-if="addMaterial">
             <div ref="materialform"
