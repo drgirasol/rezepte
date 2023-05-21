@@ -24,13 +24,15 @@
                     <input readonly placeholder="Name" class="form-control" type="text" v-model="schrittProdukt.produktId" required>
                 </div>
                 <div class="pb-2">
+                    <label for="prodName">Preis</label>
                     <input v-model="schrittProdukt.preis" class="form-control" type="number" placeholder="Preis in Cent">
                 </div>
                 <div class="pb-2">
+                    <label for="prodName">Gewicht</label>
                     <input v-model="schrittProdukt.gewicht" class="form-control" type="number" placeholder="Gewicht in Gramm">
                 </div>
                 <div class="d-grid gap-2">
-                    <button class="btn btn-primary" type="submit" @click="insertProdukt">Hinzufügen</button>
+                    <button class="btn btn-primary" type="submit" @click="insertSchrittProdukt">Hinzufügen</button>
                 </div>
                 
                 <div class="d-grid gap-2">
@@ -107,7 +109,7 @@
                 <input v-model="fRezeptName" class="form-control" name="Name" id="rezeptname" placeholder="Name">
                 
             </div>
-            <div v-if="curRezept.anleitung.schritte.length > 0" class="p-2">
+            <div v-if="curRezept.anleitung && curRezept.anleitung.schritte.length > 0" class="p-2">
                 <p class="h4 pt-3">Anleitung</p>
                 <div v-for="aSchritt of curRezept.anleitung.schritte">
                     <div class="p-2" id="stepForm">
@@ -144,7 +146,7 @@
                                 </select>
                             </div>
                             <div>
-                                Produkte: {{ aSchritt.produkte.map(p => p._id).join(", ") }}
+                                Produkte: {{ aSchritt.produkte.map(p => p.produktId + ' (' + p.gewicht + 'g)').join(", ") }}
                             </div>
                             <div class="input-group">
                                 <select @change="onProduktChange(event, aSchritt.nr)" v-model="fProdukt"
@@ -175,7 +177,7 @@
         </div>
          <div v-if="addSchrittProdukt">
             <div ref="schrittProduktform"
-                v-scope="schrittProduktFormKomponente({ produkt: this.curProdukt, pdb: PouchDB, self: this })"
+                v-scope="schrittProduktFormKomponente({ produkt: curProdukt, schritt: curSchritt, rezept: curRezept, pdb: PouchDB, self: this })"
                 @finished="schrittProduktHinzugefuegt"
                 @canceled="addSchrittProdukt=false"></div>
         </div>

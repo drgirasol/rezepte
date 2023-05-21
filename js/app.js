@@ -4,6 +4,7 @@ createApp({
     PouchDB: null,
     // Schalter
     addProdukt: false,
+    addSchrittProdukt: false,
     addMaterial: false,
     //
     dbRezepte: null, //datenbankverbindungen
@@ -41,7 +42,7 @@ createApp({
             preis: 0,
             gewicht: 0
         }
-    }
+    },
     curProdukt: null,
     produkt: {
         _id: "",
@@ -72,8 +73,8 @@ createApp({
                 produktId: props.produkt._id,
                 preis: 0,
                 gewicht: 0
-            }
-            schritt: {},
+            },
+            schritt: props.schritt,
             $template: "#schritt-produkt-form-template",
             edit(id) {
                 const curProdukt = this.produkte.find(p => p._id === id)
@@ -87,29 +88,15 @@ createApp({
                 console.log("Produkte:", result);
                 this.produkte = result.rows.map(r => r.doc);
             },
-            async insertProdukt() {
-                let produkt = {
-                    _id: this.name,
-                    date: new Date().toISOString(),
-                };
-                try {
-                    const response = await this.dbProdukte.put(produkt);
-                    console.log("Eintrag gespeichert", response);
-                    await this.updateProdukte();
-                    // toDo: emit event from component as demonstrated here: https://jsfiddle.net/nooooooom/fsk7bm6j/7/
-                    // => goal: after the product was inserted, include it in the rezept and close the product add form
-                    this.$refs.produktform.dispatchEvent(
-                        new CustomEvent('finished', { bubbles: true, detail: produkt })
-                    )
-                } catch (err) {
-                    console.log(err);
-                }
+            async insertSchrittProdukt() {
+                // Prüfen ob Preis und Gewicht angegeben wurden
+                console.log("schrittProdukt hinzufügen", this.schrittProdukt)
+                props.rezept.anleitung.schritte[props.schritt-1].produkte.push(this.schrittProdukt)
             },
-            produktAbbrechen() {
-                this.$refs.produktform.dispatchEvent(
+            schrittProduktAbbrechen() {
+                this.$refs.schrittProduktform.dispatchEvent(
                     new CustomEvent('canceled', { bubbles: true, detail: null })
                 )
-
             },
             async upsertProdukt() {
                 let produkt;
@@ -148,7 +135,7 @@ createApp({
             PouchDB: props.pdb,
             self: props.self,
             dbProdukte: null,            
-            name: props.name
+            name: props.name,
             produkte: [],
             $template: "#produkt-form-template",
             edit(id) {
@@ -168,6 +155,7 @@ createApp({
                     _id: this.name,
                     date: new Date().toISOString(),
                 };
+                console.log("neues Produkt", produkt)
                 try {
                     const response = await this.dbProdukte.put(produkt);
                     console.log("Eintrag gespeichert", response);
@@ -303,15 +291,15 @@ createApp({
     async produktHinzugefuegt(data) {
         console.log(data)
         this.addProdukt = false
-        this.addSchrittProdukt = true
         this.curProdukt = data.detail
+        this.addSchrittProdukt = true
         // this.curRezept.anleitung.schritte[this.curSchritt - 1].produkte.push(data.detail);
         // await this.upsertRezept();
     },
     async materialHinzugefuegt(data) {
         console.log(data)
         this.addMaterial = false
-        this.curRezept.anleitung.schritte[this.curSchritt - 1].materialien.push(data.detail);
+        //this.curRezept.anleitung.schritte[this.curSchritt - 1].materialien.push(data.detail);
         // await this.upsertRezept();
     },
     async onMounted() {
@@ -349,9 +337,9 @@ createApp({
         return !this.schrittChanged[nr];
     },
     async addStep(save = true) {
-
         const neuerSchritt = this.schritt();
-        console.log(neuerSchritt)
+        console.log("neuer schritt", neuerSchritt)
+        console.log("...", this.curRezept)
         neuerSchritt.nr = this.curRezept.anleitung.schritte.length + 1;
         this.curRezept.anleitung.schritte.push(neuerSchritt);
         if (save) {
@@ -373,7 +361,8 @@ createApp({
                 save = true;
                 // this.curRezept._id = this.fRezeptName;
                 // Ersten Schritt hinzufügen
-                this.addStep();
+                console.log("...")
+                await this.addStep();
             } else {
                 // hm, some other error
                 throw err;
@@ -390,32 +379,19 @@ createApp({
         }
     },
     async onProduktChange(event, schrittNr) {
-        console.log(
-            "onProduktChange",
-            typeof event.target.value,
-            schrittNr,
-            this.curRezept.anleitung.schritte
-        );
         if (event.target.value === "0") {
             console.log("Produkt hinzufügen")
             this.addProdukt = true
         } else {
+            this.curProdukt = this.produkte.find((p) => p._id === event.target.value)
+            this.addSchrittProdukt = true
             this.fProdukt = ""
-            const p = this.produkte.find((p) => p._id === event.target.value);
-            this.curRezept.anleitung.schritte[this.curSchritt - 1].produkte.push(p);
-            //await this.upsertRezept()
         }
     },
     async onMaterialChange(event, schrittNr) {
-        console.log(
-            "onMaterialChange",
-            schrittNr,
-            this.fMaterial
-        );
         if (event.target.value === "0") {
             console.log("Material hinzufügen")
             this.addMaterial = true
-
         } else {            
             let p = Object.assign({}, this.material);
             p = this.materialien.find((m) => m._id === event.target.value);
