@@ -102,7 +102,11 @@
         <div v-if="!addProdukt && !addMaterial && !addSchrittProdukt"> <!--Zukünftige Rezept Formular Komponente / Template-->
             <div class="input-group">
                 <span class="input-group-text">Rezeptname</span>
-                <input v-model="fRezeptName" class="form-control" name="Name" id="rezeptname" placeholder="Name">
+                <input v-model="fRezeptName" class="form-control" placeholder="Name" @change="checkIfRezeptExists()">
+            </div>
+            <div v-if="rezeptExists">
+                Rezept "{{ fRezeptName }}" existiert
+                <button type="button" class="btn btn-outline-success btn-sm" @click="loadRezept()">Laden</button>
             </div>
             <div v-if="curRezept.anleitung && curRezept.anleitung.schritte.length > 0" class="p-2">
                 <p class="h4 pt-3">Anleitung</p>
@@ -153,14 +157,12 @@
                                 </select>
                             </div>
                         </div>
-                        <button :disabled="schrittUnchanged(aSchritt.nr)" type="button"
-                            class="btn btn-outline-success btn-sm" @click="upsertRezept()">Änderung speichern
-                        </button>
                     </div>
                     <hr>
                 </div>
                 <button type="button" class="btn btn-outline-success btn-sm" @click="addStep()">Schritt
                     hinzufügen</button>
+                <button class="btn btn-primary" type="submit" :disabled="!fRezeptName || rezeptExists" @click="saveRezept()">Speichern</button>
             </div>
         </div>
         <div v-if="addProdukt">
@@ -182,7 +184,6 @@
                 @finished="materialHinzugefuegt"
                 @canceled="addMaterial=false"></div>
         </div>
-        <button class="btn btn-primary" type="submit" :disabled="!fRezeptName" @click="upsertRezept(false)">Speichern</button>
 
         <div id="dbCount"></div>
     </div>

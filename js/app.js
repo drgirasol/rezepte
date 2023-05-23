@@ -2,17 +2,31 @@ import { createApp } from "https://unpkg.com/petite-vue@0.2.2/dist/petite-vue.es
 
 createApp({
     PouchDB: null,
+    /*
+        Datenbankverbindungen
+    */
+    // Lokal
+    dbRezepte: null,
+    dbMaterialien: null,
+    dbProdukte: null,
+    // Remote
+    rDbRezepte: null,
+    rDbMaterialien: null,
+    rDbProdukte: null,
+    /*
+        Datensammlungen
+        = Arrays mit den Daten aus der Datenbank
+    */
+    rezepte: [],
+    materialien: [],
+    produkte: [],
     // Schalter
     addProdukt: false,
     addSchrittProdukt: false,
     addMaterial: false,
-    //
-    dbRezepte: null, //datenbankverbindungen
-    dbMaterialien: null,
-    dbProdukte: null,
-    rezepte: [], //datensammlungen
-    materialien: [],
-    produkte: [],
+    /*
+        Default Datenobjekte
+     */
     rezept: () => {
         return {
             _id: "",
@@ -22,8 +36,6 @@ createApp({
             },
         }
     },
-    curRezept: {},
-    curSchritt: 1,
     schritt: (nr="") => {
         return {
             nr: nr,
@@ -36,6 +48,17 @@ createApp({
             produkte: [],
         }
     },
+    produkt: () => {
+        return {
+            _id: "",
+            qualitaet: 0,
+            verpackung: 0,
+            verfuegbarkeit: 0,
+            saison: 0,
+            herkunft: 0,
+            kategorie: 0,
+        }
+    },
     schrittProdukt: () => {
         return {
             produktId: "",
@@ -43,27 +66,28 @@ createApp({
             gewicht: 0
         }
     },
+    material: () => {
+        return {
+            _id: "",
+        }
+    },
+    //
+    curRezept: {},
+    rezeptExists: false,
+    curSchritt: 1,
     curProdukt: null,
-    produkt: {
-        _id: "",
-        qualitaet: 0,
-        verpackung: 0,
-        verfuegbarkeit: 0,
-        saison: 0,
-        herkunft: 0,
-        kategorie: 0,
-    },
-    material: {
-        _id: "",
-    },
-    fMaterial: "", //formularvariablen (einträge)
-    fProdukt: "",
-    fRezeptName: "",
-    asText: "",
-    asDauer: 0,
-    asTyp: "",
+    // Formular Variablen
+    fMaterial: "", // gewähltes Material
+    fProdukt: "", // gewähltes Produkt
+    fRezeptName: "", // Name des Rezepts
+    asText: "", // Arbeitsschritt Text
+    asDauer: 0, // Arbeitsschritt Dauer
+    asTyp: "", // Arbeitsschritt Typ
     schrittChanged: {},
     saved: false,
+    /*
+        FUNKTIONEN
+     */
     getProduktSelection(schritt) {
         console.log(schritt)
         if (this.curRezept.anleitung) {
@@ -73,6 +97,123 @@ createApp({
             return []
         }
     },
+    async schrittProduktHinzugefuegt(data) {
+        this.curProdukt = null
+        this.addSchrittProdukt = false
+    },
+    async produktHinzugefuegt(data) {
+        console.log(data)
+        this.addProdukt = false
+        this.curProdukt = data.detail
+        this.fProdukt = ""
+        this.addSchrittProdukt = true
+        // this.curRezept.anleitung.schritte[this.curSchritt - 1].produkte.push(data.detail);
+        // await this.upsertRezept();
+    },
+    async materialHinzugefuegt(data) {
+        console.log(data)
+        this.addMaterial = false
+        //this.curRezept.anleitung.schritte[this.curSchritt - 1].materialien.push(data.detail);
+        // await this.upsertRezept();
+    },
+    /*
+        Update der Datensammlungen:
+        - Holt Daten aus der Datenbank
+        - dbname = "Rezepte", "Materialien" oder "Produkte"
+     */
+    async update(dbName) {
+        const result = await this["db" + dbName].allDocs({
+            include_docs: true,
+        });
+        console.log(result);
+        this[dbName.toLowerCase()] = result.rows.map((r) => r.doc);
+    },
+    displayCount() {},
+    save() {},
+    setSchrittChanged(nr) {
+        this.schrittChanged[nr] = true;
+    },
+    schrittUnchanged(nr) {
+        return !this.schrittChanged[nr];
+    },
+    async addStep(save = true) {
+        const neuerSchritt = this.schritt();
+        console.log("neuer schritt", neuerSchritt)
+        console.log("...", this.curRezept)
+        neuerSchritt.nr = this.curRezept.anleitung.schritte.length + 1;
+        this.curRezept.anleitung.schritte.push(neuerSchritt);
+        if (save) {
+            //await this.upsertRezept();
+        }
+    },
+    exists() {
+        return this.rezepte.findIndex(r => r.name === this.fRezeptName) > -1
+        /*try {
+            const response = await this.dbRezepte.find({ selector: { name: this.fRezeptName } });
+            console.log(response)
+            return response.docs.length > 0
+        } catch (err) {
+            if (err.name === "not_found") {
+                return false
+            } else {
+                // hm, some other error
+                console.error(err)
+                throw err;
+            }
+        }*/
+    },
+    checkIfRezeptExists () {
+        if (this.fRezeptName.length > 1) {
+            this.rezeptExists = this.exists()
+            console.log("rezeptExists: ", this.rezeptExists, this.fRezeptName)
+        }
+    },
+    async loadRezept() {
+        this.curRezept = this.rezepte.find(r => r.name === this.fRezeptName)
+        this.rezeptExists = false
+    },
+    async saveRezept() {
+        this.curRezept.name = this.fRezeptName
+        if (this.curRezept._id) {
+            const curRezept = await this.dbRezepte.get(this.curRezept._id)
+            this.curRezept._rev = curRezept._rev
+            const response = await this.dbRezepte.put(this.curRezept)
+            console.log("Rezept aktualisiert", response)
+        } else {
+            try {
+                const response = await this.dbRezepte.post(this.curRezept)
+                console.log("Neues Rezept gespeichert", response)
+                this.curRezept._id = response.id
+            } catch (err) {
+                console.error(err)
+            }
+        }
+    },
+    async onProduktChange(event, schrittNr) {
+        if (event.target.value === "0") {
+            console.log("Produkt hinzufügen")
+            this.addProdukt = true
+        } else {
+            this.curProdukt = this.produkte.find((p) => p._id === event.target.value)
+            this.addSchrittProdukt = true
+            this.fProdukt = ""
+        }
+    },
+    async onMaterialChange(event, schrittNr) {
+        if (event.target.value === "0") {
+            console.log("Material hinzufügen")
+            this.addMaterial = true
+        } else {
+            let p = Object.assign({}, this.material);
+            p = this.materialien.find((m) => m._id === event.target.value);
+            this.curRezept.anleitung.schritte[this.curSchritt - 1].materialien.push(p);
+            //await this.upsertRezept()
+            event.target.value = ""
+        }
+    },
+    /*
+        Komponenten
+     */
     schrittProduktFormKomponente(props) {
         return {
             PouchDB: props.pdb,
@@ -103,10 +244,6 @@ createApp({
                 console.log("Komponente mounted");
             },
         };
-    },
-    async schrittProduktHinzugefuegt(data) {
-        this.curProdukt = null
-        this.addSchrittProdukt = false
     },
     produktFormKomponente(props) {
         return {
@@ -185,16 +322,6 @@ createApp({
             },
         };
     },
-    async produktHinzugefuegt(data) {
-        console.log(data)
-        this.addProdukt = false
-        this.curProdukt = data.detail
-        this.fProdukt = ""
-        this.addSchrittProdukt = true
-        // this.curRezept.anleitung.schritte[this.curSchritt - 1].produkte.push(data.detail);
-        // await this.upsertRezept();
-    },
-    //
     materialFormKomponente(props) {
         return {
             PouchDB: props.pdb,
@@ -275,108 +402,62 @@ createApp({
             },
         };
     },
-    async materialHinzugefuegt(data) {
-        console.log(data)
-        this.addMaterial = false
-        //this.curRezept.anleitung.schritte[this.curSchritt - 1].materialien.push(data.detail);
-        // await this.upsertRezept();
-    },
+    /*
+        Startfunktion
+        - wird ausgeführt, sobald die Seite geladen wurde
+     */
     async onMounted() {
         console.log("onMounted startet...");
-        this.dbRezepte = new PouchDB("Rezept"); //greift auf die datenbank zu, bzw erzeugt sie wenn nicht vorhanden
-        await this.update("Rezepte"); //der string rezepte wird der update funktion übergeben
+        this.dbRezepte = new PouchDB("Rezepte"); // Greift auf die Datenbank zu, bzw erzeugt sie wenn nicht vorhanden
+        this.rDbRezepte = new PouchDB("https://apartofnature.info/rezepte", {
+            auth: {
+                username: "rezeptator",
+                password: "IkolpingT2023"
+            }
+        })
+        this.dbRezepte.sync(this.rDbRezepte, {
+            live: true,
+            retry: true
+        }).on('error', function (err) {
+            console.log("Rezepte Sync Error")
+        });
+        await this.update("Rezepte"); // Der string Rezepte wird der update funktion übergeben
+        //
         this.dbMaterialien = new PouchDB("Materialien");
+        this.rDbMaterialien = new PouchDB("https://apartofnature.info/materialien", {
+            auth: {
+                username: "rezeptator",
+                password: "IkolpingT2023"
+            }
+        })
+        this.dbMaterialien.sync(this.rDbMaterialien, {
+            live: true,
+            retry: true
+        }).on('error', function (err) {
+            console.log("Materialien Sync Error")
+        });
         await this.update("Materialien");
+        //
         this.dbProdukte = new PouchDB("Produkte")
+        this.rDbProdukte = new PouchDB("https://apartofnature.info/produkte", {
+            auth: {
+                username: "rezeptator",
+                password: "IkolpingT2023"
+            }
+        })
+        this.dbProdukte.sync(this.rDbProdukte, {
+            live: true,
+            retry: true
+        }).on('error', function (err) {
+            console.log("Produkte Sync Error")
+        });
         await this.update("Produkte")
-        console.log("Datenbanken initialisiert...", this.rezept());
+        //
+        console.log("Datenbanken und -sammlungen initialisiert...");
+        //
         this.curRezept = this.rezept()
         this.curRezept.anleitung.schritte.push(this.schritt(1))
+        console.log("Neues Rezept initialisiert...");
     },
-    async update(dbName) {
-        const result = await this["db" + dbName].allDocs({
-            include_docs: true,
-        });
 
-        console.log(result);
-
-        this[dbName.toLowerCase()] = result.rows.map((r) => r.doc);
-    },
-    insertMaterial() {
-    },
-    displayCount() {
-    },
-    save() {
-
-    },
-    setSchrittChanged(nr) {
-        this.schrittChanged[nr] = true;
-    },
-    schrittUnchanged(nr) {
-        return !this.schrittChanged[nr];
-    },
-    async addStep(save = true) {
-        const neuerSchritt = this.schritt();
-        console.log("neuer schritt", neuerSchritt)
-        console.log("...", this.curRezept)
-        neuerSchritt.nr = this.curRezept.anleitung.schritte.length + 1;
-        this.curRezept.anleitung.schritte.push(neuerSchritt);
-        if (save) {
-            //await this.upsertRezept();
-        }
-    },
-    async upsertRezept(save = true) {
-        try {
-            const savedRezept = await this.dbRezepte.find({ selector: { name: this.fRezeptName } });
-            console.log("gespeichertes Rezept", savedRezept);
-            if (!this.curRezept._id) {
-                this.curRezept = savedRezept;
-            } else {
-                this.curRezept._rev = savedRezept._rev; // update _rev
-            }
-        } catch (err) {
-            if (err.name === "not_found") {
-                // falls der Eintrag dort nicht existiert
-                save = true;
-                // this.curRezept._id = this.fRezeptName;
-                // Ersten Schritt hinzufügen
-                console.log("...")
-                await this.addStep();
-            } else {
-                // hm, some other error
-                throw err;
-            }
-        }
-        if (save) {
-            try {
-                const response = await this.dbRezepte.post(this.curRezept);
-                this.schrittChanged = {};
-                console.log("Eintrag gespeichert", response);
-            } catch (err) {
-                console.log(err);
-            }
-        }
-    },
-    async onProduktChange(event, schrittNr) {
-        if (event.target.value === "0") {
-            console.log("Produkt hinzufügen")
-            this.addProdukt = true
-        } else {
-            this.curProdukt = this.produkte.find((p) => p._id === event.target.value)
-            this.addSchrittProdukt = true
-            this.fProdukt = ""
-        }
-    },
-    async onMaterialChange(event, schrittNr) {
-        if (event.target.value === "0") {
-            console.log("Material hinzufügen")
-            this.addMaterial = true
-        } else {            
-            let p = Object.assign({}, this.material);
-            p = this.materialien.find((m) => m._id === event.target.value);
-            this.curRezept.anleitung.schritte[this.curSchritt - 1].materialien.push(p);
-            //await this.upsertRezept()
-            event.target.value = ""
-        }
-    },
 }).mount("#Rezeptformular");
