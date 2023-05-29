@@ -1,4 +1,4 @@
-import { createApp } from "https://unpkg.com/petite-vue@0.2.2/dist/petite-vue.es.js";
+import {createApp} from "https://unpkg.com/petite-vue@0.2.2/dist/petite-vue.es.js";
 
 createApp({
     PouchDB: null,
@@ -24,6 +24,7 @@ createApp({
     addProdukt: false,
     addSchrittProdukt: false,
     addMaterial: false,
+    showRezepteList: false,
     /*
         Default Datenobjekte
      */
@@ -36,7 +37,7 @@ createApp({
             },
         }
     },
-    schritt: (nr="") => {
+    schritt: (nr = "") => {
         return {
             nr: nr,
             text: "",
@@ -91,7 +92,7 @@ createApp({
     getProduktSelection(schritt) {
         console.log(schritt)
         if (this.curRezept.anleitung) {
-            const included = this.curRezept.anleitung.schritte[schritt-1].produkte.map(p => p.produktId)
+            const included = this.curRezept.anleitung.schritte[schritt - 1].produkte.map(p => p.produktId)
             return this.produkte.filter(p => included.indexOf(p._id) === -1)
         } else {
             return []
@@ -125,11 +126,13 @@ createApp({
         const result = await this["db" + dbName].allDocs({
             include_docs: true,
         });
-        console.log(result);
-        this[dbName.toLowerCase()] = result.rows.map((r) => r.doc);
+        this[dbName.toLowerCase()] = result.rows.filter(r => !r.doc._id.match(/^_design/)).map(r => r.doc);
+        console.log(this[dbName.toLowerCase()]);
     },
-    displayCount() {},
-    save() {},
+    displayCount() {
+    },
+    save() {
+    },
     setSchrittChanged(nr) {
         this.schrittChanged[nr] = true;
     },
@@ -162,14 +165,24 @@ createApp({
             }
         }*/
     },
-    checkIfRezeptExists () {
+    checkIfRezeptExists() {
         if (this.fRezeptName.length > 1) {
             this.rezeptExists = this.exists()
             console.log("rezeptExists: ", this.rezeptExists, this.fRezeptName)
         }
     },
-    async loadRezept() {
-        this.curRezept = this.rezepte.find(r => r.name === this.fRezeptName)
+    async loadRezept(id) {
+        console.log(id)
+        if (typeof id === "undefined") {
+            this.curRezept = this.rezepte.find(r => r.name === this.fRezeptName)
+        } else {
+            if (id.detail) {
+                this.curRezept = this.rezepte.find(r => r._id === id.detail)
+            } else {
+                this.curRezept = this.rezepte.find(r => r._id === id)
+            }
+            this.fRezeptName = this.curRezept.name
+        }
         this.rezeptExists = false
     },
     async saveRezept() {
@@ -214,6 +227,26 @@ createApp({
     /*
         Komponenten
      */
+    rezeptListKomponente(props) {
+        return {
+            rezepte: props.rezepte,
+            $template: "#rezept-list-template",
+            edit(id) {
+                this.$refs.rezeptList.dispatchEvent(
+                    new CustomEvent('edit', {bubbles: true, detail: id})
+                )
+                this.close()
+            },
+            close() {
+                this.$refs.rezeptList.dispatchEvent(
+                    new CustomEvent('close', {bubbles: true, detail: null})
+                )
+            },
+            async init() {
+                console.log("Rezept List Komponente mounted");
+            },
+        };
+    },
     schrittProduktFormKomponente(props) {
         return {
             PouchDB: props.pdb,
@@ -226,18 +259,19 @@ createApp({
             },
             schritt: props.schritt,
             $template: "#schritt-produkt-form-template",
-            edit(id) {},
+            edit(id) {
+            },
             async insertSchrittProdukt() {
                 // Prüfen ob Preis und Gewicht angegeben wurden
                 console.log("schrittProdukt hinzufügen", this.schrittProdukt)
-                props.rezept.anleitung.schritte[props.schritt-1].produkte.push(this.schrittProdukt)
+                props.rezept.anleitung.schritte[props.schritt - 1].produkte.push(this.schrittProdukt)
                 this.$refs.schrittProduktform.dispatchEvent(
-                    new CustomEvent('finished', { bubbles: true, detail: null })
+                    new CustomEvent('finished', {bubbles: true, detail: null})
                 )
             },
             schrittProduktAbbrechen() {
                 this.$refs.schrittProduktform.dispatchEvent(
-                    new CustomEvent('canceled', { bubbles: true, detail: null })
+                    new CustomEvent('canceled', {bubbles: true, detail: null})
                 )
             },
             async init() {
@@ -249,7 +283,7 @@ createApp({
         return {
             PouchDB: props.pdb,
             self: props.self,
-            dbProdukte: null,            
+            dbProdukte: null,
             name: props.name,
             produkte: [],
             $template: "#produkt-form-template",
@@ -278,7 +312,7 @@ createApp({
                     // toDo: emit event from component as demonstrated here: https://jsfiddle.net/nooooooom/fsk7bm6j/7/
                     // => goal: after the product was inserted, include it in the rezept and close the product add form
                     this.$refs.produktform.dispatchEvent(
-                        new CustomEvent('finished', { bubbles: true, detail: produkt })
+                        new CustomEvent('finished', {bubbles: true, detail: produkt})
                     )
                 } catch (err) {
                     console.log(err);
@@ -286,7 +320,7 @@ createApp({
             },
             produktAbbrechen() {
                 this.$refs.produktform.dispatchEvent(
-                    new CustomEvent('canceled', { bubbles: true, detail: null })
+                    new CustomEvent('canceled', {bubbles: true, detail: null})
                 )
 
             },
@@ -355,7 +389,7 @@ createApp({
                     // toDo: emit event from component as demonstrated here: https://jsfiddle.net/nooooooom/fsk7bm6j/7/
                     // => goal: after the product was inserted, include it in the rezept and close the product add form
                     this.$refs.materialform.dispatchEvent(
-                        new CustomEvent('finished', { bubbles: true, detail: material })
+                        new CustomEvent('finished', {bubbles: true, detail: material})
                     )
                 } catch (err) {
                     console.log(err);
@@ -391,7 +425,7 @@ createApp({
             materialAbbrechen() {
 
                 this.$refs.materialform.dispatchEvent(
-                    new CustomEvent('canceled', { bubbles: true, detail: null })
+                    new CustomEvent('canceled', {bubbles: true, detail: null})
                 )
 
             },
