@@ -125,6 +125,7 @@ createApp({
     async update(dbName) {
         const result = await this["db" + dbName].allDocs({
             include_docs: true,
+            attachments: true
         });
         this[dbName.toLowerCase()] = result.rows.filter(r => !r.doc._id.match(/^_design/)).map(r => r.doc);
         console.log(this[dbName.toLowerCase()]);
@@ -224,9 +225,70 @@ createApp({
             event.target.value = ""
         }
     },
+    async saveAttachments(data) {
+        for (const file of data.detail) {
+            if (file) {
+                const response = await this.dbRezepte.putAttachment(this.curRezept._id, file.name, this.curRezept._rev, file, file.type)
+                console.log(response)
+            }
+        }
+    },
     /*
         Komponenten
      */
+    fotoFormKomponente(props) {
+        return {
+            PouchDB: props.pdb,
+            self: props.self,
+            dbMaterialien: null,
+            dateien: [],
+            $template: "#foto-form-template",
+            processFotos() {
+                const input = document.getElementById('fotosToProcess');
+                this.$refs.fotoUploadForm.dispatchEvent(
+                    new CustomEvent('save', {bubbles: true, detail: input.files})
+                )
+            },
+            fotoAbbrechen() {
+
+            },
+
+            edit(id) {
+                const curMaterial = this.materialien.find(m => m._id === id)
+                console.log(curMaterial)
+                this.name = curMaterial._id
+
+            },
+
+            async init() {
+                //this.dbMaterialien = new PouchDB("Materialien");
+                //await this.updateMaterialien();
+                console.log("Komponente mounted", this.dateien);
+            },
+        };
+    },
+    fotoListKomponente(props) {
+        return {
+            self: props.self,
+            rezept: props.rezept,
+            bilder: [],
+            $template: "#foto-list-template",
+            init() {
+                const bilder = []
+                if (Object.keys(this.rezept._attachments).length) {
+                    for (const name of Object.keys(this.rezept._attachments)) {
+                        console.log(this.rezept._attachments[name])
+                        bilder.push({
+                            name: name,
+                            url: 'data:' + this.rezept._attachments[name].content_type + ';base64,' + this.rezept._attachments[name].data
+                        })
+                    }
+                    this.bilder = bilder
+                }
+                console.log("Foto Liste Komponente mounted", bilder);
+            },
+        };
+    },
     rezeptListKomponente(props) {
         return {
             rezepte: props.rezepte,

@@ -11,9 +11,48 @@
     <script src="//cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js"></script>
     <script src="js/pouchdb.find.js"></script>
     <script type="module" src="js/app.js"></script>
+    <style>
+        .thumbnail {
+            max-width: 150px;  /* Die maximale Breite des Thumbnails */
+            max-height: 150px; /* Die maximale Höhe des Thumbnails */
+            width: auto;      /* Die Breite wird automatisch angepasst */
+            height: auto;     /* Die Höhe wird automatisch angepasst */
+        }
+    </style>
 </head>
 
 <body>
+<template id="foto-form-template">
+    <div class="flex items-stretch p-2" @mounted="init()">
+        <h4>Foto hochladen</h4>
+        <div class="p-2">
+            <form method="post" enctype="multipart/form-data">
+                <div class="pb-2">
+                    <label for="fotosToProcess">Fotos auswählen</label>
+                    <input class="form-control" type="file" id="fotosToProcess"
+                           accept="image/png, image/jpeg">
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" type="button" @click="processFotos">Hochladen</button>
+                </div>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" @click="fotoAbbrechen">Abbrechen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</template>
+<template id="foto-list-template">
+    <div class="flex items-stretch p-2" @mounted="init()">
+        <ol>
+            <li v-for="img of bilder" :idx="img.name">
+                <img class="thumbnail" :src="img.url">
+            </li>
+        </ol>
+        <hr>
+    </div>
+</template>
 <template id="schritt-produkt-form-template">
     <!--Step Indicators-->
     <div class="flex items-stretch p-2" @mounted="init()">
@@ -190,6 +229,11 @@
             <button type="button" class="btn btn-outline-success btn-sm" @click="addStep()">Schritt
                 hinzufügen
             </button>
+            <div v-if="curRezept._id">
+                <div ref="fotoListe" v-scope="fotoListKomponente({ rezept: curRezept, self: this })"></div>
+                <div ref="fotoUploadForm" v-scope="fotoFormKomponente({ pdb: PouchDB, self: this })"
+                     @save="saveAttachments" @finished="attachmentsHinzugefuegt" @canceled=""></div>
+            </div>
             <button class="btn btn-primary" type="submit" :disabled="!fRezeptName || rezeptExists"
                     @click="saveRezept()">Speichern
             </button>
