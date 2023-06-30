@@ -2,6 +2,7 @@
   <div class="p-2">
     <div>
       <div class="pb-2">
+        <router-link to="/">Home</router-link>&nbsp;
         <router-link to="/liste">Rezepte</router-link>
       </div>
       <div class="input-group">
@@ -9,13 +10,17 @@
         <input v-model="state.rezept.name" class="form-control" placeholder="Name" @change="checkIfRezeptExists()">
       </div>
 
-      <Anleitung :rezept="state.rezept" @add-step="addStep" @refresh="refresh"/>
+      <div v-if="state.rezept.anleitung && state.rezept.anleitung.schritte.length > 0" class="p-2">
+        <p class="h4 pt-3">Anleitung</p>
+        <Schritt v-for="schritt of state.rezept.anleitung.schritte" :schritt="schritt" :key="schritt.nr" @refresh="$emit('refresh')"/>
+      </div>
 
       <button type="button" class="btn btn-outline-success btn-sm" @click="addStep()">Schritt hinzufügen</button>
+
       <div v-if="state.rezept._id">
-        <!--          <div ref="fotoListe" v-scope="fotoListKomponente({ rezept: state.rezept, self: this })"></div>-->
-        <!--          <div ref="fotoUploadForm" v-scope="fotoFormKomponente({ pdb: PouchDB, self: this })"-->
-        <!--               @save="saveAttachments" @finished="attachmentsHinzugefuegt" @canceled=""></div>-->
+        <FotoListe :bilder="state.bilder"/>
+        <button class="btn btn-secondary" @click="fotoUploadDialogOpen=true">Foto hinzufügen</button>
+        <FotoUploadDialog :is-open="fotoUploadDialogOpen"  @close-dialog="closeFotoUploadDialog"/>
       </div>
       <button class="btn btn-primary" type="submit" :disabled="!state.rezept.name || exists" @click="saveRezept()">Speichern
       </button>
@@ -27,11 +32,14 @@
 import {onMounted, reactive, ref} from "vue";
 import PouchDB from "pouchdb-browser";
 import {useRoute, useRouter} from "vue-router";
-import Anleitung from "./Anleitung.vue";
+import FotoListe from "@/components/editor/FotoListe.vue";
+import FotoUploadDialog from "@/components/editor/FotoUploadDialog.vue";
+import Schritt from "@/components/editor/Schritt.vue";
+import NewProduktDialog from "@/components/editor/NewProduktDialog.vue";
 
 export default {
-  components: {Anleitung},
-  setup() {
+  components: {NewProduktDialog, Schritt, FotoUploadDialog, FotoListe},
+  setup(props, { emit }) {
     const $route = useRoute()
     const $router = useRouter()
     const db = new PouchDB("Rezepte")
@@ -51,15 +59,37 @@ export default {
             produkte: [],
           }],
         }
-      }
+      },
+      bilder: []
     });
     const exists = new ref(false)
+    const fotoUploadDialogOpen = ref(false); // Zustand zur Steuerung des Dialogs
+    const closeFotoUploadDialog = async () => {
+      fotoUploadDialogOpen.value = false; // Schließt den Dialog
+      // await loadProducts()
+      await refresh()
+    };
     async function refresh() {
       await loadRezept()
+      setBilder()
+    }
+    function setBilder() {
+      const bilder = []
+      if (state.rezept._attachments && Object.keys(state.rezept._attachments).length) {
+        for (const name of Object.keys(state.rezept._attachments)) {
+          console.log(state.rezept._attachments[name])
+          bilder.push({
+            name: name,
+            url: 'data:' + state.rezept._attachments[name].content_type + ';base64,' + state.rezept._attachments[name].data
+          })
+        }
+        state.bilder = bilder
+      }
     }
     async function loadRezept() {
       try {
-        state.rezept = await db.get($route.params.id)
+        state.rezept = await db.get($route.params.id, { attachments: true })
+        setBilder()
       } catch (error) {
         console.error('Error retrieving recipes:', error)
       }
@@ -69,6 +99,7 @@ export default {
       if ($route.params.id) {
         console.debug($route.params.id)
         await loadRezept()
+        setBilder()
       } else {
 
       }
@@ -76,6 +107,8 @@ export default {
     return {
       state,
       exists,
+      fotoUploadDialogOpen,
+      closeFotoUploadDialog,
       refresh,
       loadRezept,
       addStep () {
