@@ -17,7 +17,7 @@ import {onMounted, reactive, ref} from "vue";
 import PouchDB from "pouchdb-browser";
 import {useRoute, useRouter} from "vue-router";
 import SchrittProduktDialog from "@/components/editor/SchrittProduktDialog.vue";
-import NewProduktDialog from "@/components/editor/NewProduktDialog.vue";
+import NewProduktDialog from "@/components/NewProduktDialog.vue";
 
 export default {
   components: {NewProduktDialog, SchrittProduktDialog},

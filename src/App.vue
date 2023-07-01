@@ -1,10 +1,11 @@
 <template>
-  <div>
+  <div class="p-2">
     <router-view></router-view>
   </div>
 </template>
 
 <script>
+import 'bootstrap-icons/font/bootstrap-icons.css';
 export default {
   // Komponentenlogik hier
 };

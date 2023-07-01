@@ -1,6 +1,9 @@
 <template>
   <div>
-    <h1>Rezept-Liste</h1>
+    <div class="pb-2">
+      <router-link to="/"><i class="bi bi-house"></i> Home</router-link>&nbsp;
+    </div>
+    <h1><i class="bi bi-card-list"></i> Rezept-Liste</h1>
     <ol>
       <li v-for="r of rezepte" :idx="r._id">
         <router-link :to="'/rezept/' + r._id">{{ r.name }}</router-link>

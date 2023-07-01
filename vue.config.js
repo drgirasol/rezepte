@@ -1,10 +1,16 @@
 // vue.config.js
 
 module.exports = {
-    publicPath: '/RezepteApp/',
+    publicPath: '/',
     devServer: {
         historyApiFallback: {
-            index: '/RezepteApp/' // Hier den gewünschten Basispfad angeben
+            index: '/'
+        },
+        proxy: {
+            '/api': {
+                target: 'http://localhost:3000', // Beispiel-Backend-URL
+                changeOrigin: true
+            }
         }
     }
 };

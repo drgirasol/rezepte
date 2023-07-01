@@ -1,30 +1,58 @@
 <template>
-  <div class="p-2">
-    <div>
-      <div class="pb-2">
-        <router-link to="/">Home</router-link>&nbsp;
-        <router-link to="/liste">Rezepte</router-link>
-      </div>
-      <div class="input-group">
-        <span class="input-group-text">Rezeptname</span>
-        <input v-model="state.rezept.name" class="form-control" placeholder="Name" @change="checkIfRezeptExists()">
-      </div>
-
-      <div v-if="state.rezept.anleitung && state.rezept.anleitung.schritte.length > 0" class="p-2">
-        <p class="h4 pt-3">Anleitung</p>
-        <Schritt v-for="schritt of state.rezept.anleitung.schritte" :schritt="schritt" :key="schritt.nr" @refresh="$emit('refresh')"/>
-      </div>
-
-      <button type="button" class="btn btn-outline-success btn-sm" @click="addStep()">Schritt hinzufügen</button>
-
-      <div v-if="state.rezept._id">
-        <FotoListe :bilder="state.bilder"/>
-        <button class="btn btn-secondary" @click="fotoUploadDialogOpen=true">Foto hinzufügen</button>
-        <FotoUploadDialog :is-open="fotoUploadDialogOpen"  @close-dialog="closeFotoUploadDialog"/>
-      </div>
-      <button class="btn btn-primary" type="submit" :disabled="!state.rezept.name || exists" @click="saveRezept()">Speichern
-      </button>
+  <div>
+    <div class="pb-2">
+      <router-link to="/"><i class="bi bi-house"></i> Home</router-link>&nbsp;
+      <router-link to="/liste"><i class="bi bi-card-list"></i> Rezepte</router-link>
     </div>
+    <div class="input-group">
+      <span class="input-group-text">Rezeptname</span>
+      <input v-model="state.rezept.name" class="form-control" placeholder="Name" @change="checkIfRezeptExists()">
+    </div>
+
+    <div v-if="state.rezept.anleitung && state.rezept.anleitung.schritte.length > 0" class="p-2">
+      <p class="h4 pt-3">Anleitung</p>
+      <div class="accordion" id="schrittAccordion">
+        <div
+            v-for="(schritt, idx) of state.rezept.anleitung.schritte"
+            class="accordion-item"
+        >
+          <h2 class="accordion-header">
+            <button :class="idx===0 ? 'accordion-button' : 'accordion-button collapsed'" type="button" data-bs-toggle="collapse"
+                    :data-bs-target="'#collapse'+schritt.nr" :aria-expanded="idx===0 ? 'true' : 'false'"
+                    :aria-controls="'collapse'+schritt.nr">
+              Schritt {{ schritt.nr }}
+            </button>
+          </h2>
+          <div :id="'collapse'+schritt.nr" :class="idx===0 ? 'accordion-collapse collapse show' : 'accordion-collapse collapse'" data-bs-parent="#schrittAccordion">
+            <div class="accordion-body">
+              <Schritt :schritt="schritt" :key="schritt.nr" @refresh="$emit('refresh')"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header bg-primary">
+          <button type="button" class="btn text-white" @click="addStep()"><i class="bi bi-plus-square"></i> Schritt hinzufügen</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" v-if="state.rezept._id">
+      <div class="card-header">
+        Bilder
+      </div>
+      <div class="card-body">
+        <FotoListe :bilder="state.bilder"/>
+      </div>
+      <div class="card-footer bg-primary">
+        <button class="btn text-white" @click="fotoUploadDialogOpen=true"><i class="bi bi-plus-square"></i> Foto hinzufügen</button>
+        <FotoUploadDialog :is-open="fotoUploadDialogOpen" @close-dialog="closeFotoUploadDialog"/>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" type="submit" :disabled="!state.rezept.name || exists" @click="saveRezept()">
+      Speichern
+    </button>
+
   </div>
 </template>
 
@@ -35,11 +63,11 @@ import {useRoute, useRouter} from "vue-router";
 import FotoListe from "@/components/editor/FotoListe.vue";
 import FotoUploadDialog from "@/components/editor/FotoUploadDialog.vue";
 import Schritt from "@/components/editor/Schritt.vue";
-import NewProduktDialog from "@/components/editor/NewProduktDialog.vue";
+import NewProduktDialog from "@/components/NewProduktDialog.vue";
 
 export default {
   components: {NewProduktDialog, Schritt, FotoUploadDialog, FotoListe},
-  setup(props, { emit }) {
+  setup(props, {emit}) {
     const $route = useRoute()
     const $router = useRouter()
     const db = new PouchDB("Rezepte")
@@ -69,10 +97,12 @@ export default {
       // await loadProducts()
       await refresh()
     };
+
     async function refresh() {
       await loadRezept()
       setBilder()
     }
+
     function setBilder() {
       const bilder = []
       if (state.rezept._attachments && Object.keys(state.rezept._attachments).length) {
@@ -86,14 +116,16 @@ export default {
         state.bilder = bilder
       }
     }
+
     async function loadRezept() {
       try {
-        state.rezept = await db.get($route.params.id, { attachments: true })
+        state.rezept = await db.get($route.params.id, {attachments: true})
         setBilder()
       } catch (error) {
         console.error('Error retrieving recipes:', error)
       }
     }
+
     onMounted(async () => {
 
       if ($route.params.id) {
@@ -111,9 +143,9 @@ export default {
       closeFotoUploadDialog,
       refresh,
       loadRezept,
-      addStep () {
+      addStep() {
         state.rezept.anleitung.schritte.push({
-          nr: state.rezept.anleitung.schritte.length+1,
+          nr: state.rezept.anleitung.schritte.length + 1,
           text: "",
           zeit: {
             dauer: "",

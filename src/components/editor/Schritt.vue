@@ -2,8 +2,7 @@
   <div class="p-2" id="stepForm">
     <div class="row gy-2">
       <div class="input-group">
-        <span class="input-group-text">Arbeitsschritt {{ schritt.nr }}</span>
-        <input v-model="schritt.text" class="form-control">
+        <input placeholder="Beschreibung" v-model="schritt.text" class="form-control">
       </div>
       <div class="input-group">
         <span class="input-group-text">Dauer</span>
