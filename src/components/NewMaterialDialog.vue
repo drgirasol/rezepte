@@ -7,6 +7,10 @@
           <label for="matName">Name</label>
           <input placeholder="Name" class="form-control" type="text" v-model="name" id="matName" required>
         </div>
+        <div class="pb-2">
+          <label for="matName">Beschreibung</label>
+          <input placeholder="Beschreibung" class="form-control" type="text" v-model="desc" id="matDesc" required>
+        </div>
 
         <div class="d-grid gap-2">
           <button class="btn btn-primary" type="submit" @click="addMaterial">Hinzufügen</button>
@@ -37,26 +41,32 @@ export default defineComponent({
   setup(props, {emit}) {
     const db = new PouchDB("Materialien")
     const name = ref(null)
+    const desc = ref(null)
     const material = reactive({
       _id: "",
+      desc: ""
     })
     watch(
         () => props.isOpen,
         (newVal, oldValue) => {
           if (newVal) {
             material._id = ""
+            material.desc = ""
           }
         }
     );
     onBeforeMount(() => {
       material._id = ""
+      material.desc = ""
     })
     return {
       name,
+      desc,
       material,
       async addMaterial() {
         try {
           material._id = name.value
+          material.desc = desc.value
           await db.put(material)
         } catch (error) {
           console.error('Error saving produkt:', error)

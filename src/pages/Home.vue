@@ -8,6 +8,7 @@
         <button class="btn btn-primary" type="button" @click="navigateTo('/produkte')"><i class="bi bi-card-list"></i> Produkte</button>
         <button class="btn btn-primary" type="button" @click="openNewProduktDialog"><i class="bi bi-cart-plus"></i> Neues Produkt</button>
         <button class="btn btn-primary" type="button" @click="navigateTo('/materialien')"><i class="bi bi-card-list"></i> Materialien</button>
+        <button class="btn btn-primary" type="button" @click="navigateTo('/material')"><i class="bi bi-card-list"></i> Neues Material</button>
       </div>
     </div>
     <NewProduktDialog :is-open="newProduktDialogOpen" @close-dialog="closeNewProduktDialog"/>
@@ -16,6 +17,15 @@
 </template>
 
 <script>
+/*
+  @Robin: Zwecks besserer Übersicht und weil es pflegeleichter ist, hab ich Listen für Material und Produkte als separate Komponenten angelegt.
+  Auch habe ich die Darstellung der Materialliste beispielhaft verändert.
+  Bei den Produkten wäre es hilfreich, wenn man da gleich sieht, welche Attribute bereits einen Wert haben und welche nicht.
+  Du kannst z.B. dort ein Bootstrap Accordion (https://getbootstrap.com/docs/5.1/components/accordion/) verwenden.
+  Die einzelnen Produkte sind dann "accordion-item"s. (also anstatt <li v-for...> <div class="accordion-item" v-for...>)
+  Der "accordion-header" ist der Name des Produkts.
+  Der "accordion-body" enthält die anderen Attribute und einen edit button
+ */
 import NewProduktDialog from "@/components/NewProduktDialog.vue";
 import {ref} from "vue";
 import {useRouter} from "vue-router";

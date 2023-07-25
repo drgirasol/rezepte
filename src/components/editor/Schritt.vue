@@ -1,5 +1,5 @@
 <template>
-  <div class="p-2" id="stepForm">
+  <div class="p-2">
     <div class="row gy-2">
       <div class="input-group">
         <input placeholder="Beschreibung" v-model="schrittText" class="form-control" aria-describedby="textSaveAddon">
@@ -9,6 +9,7 @@
         <span class="input-group-text">Dauer</span>
         <input placeholder="Dauer in Minuten" v-model="schrittZeitDauer" class="form-control" aria-describedby="zeitDauerAddon">
         <button v-if="schritt.zeit.dauer !== schrittZeitDauer" class="btn btn-success" type="button" id="zeitDauerAddon" @click="save"><i class="bi bi-save"></i></button>
+        <span class="input-group-text">min</span>
       </div>
       <div class="input-group">
         <span class="input-group-text">Typ</span>

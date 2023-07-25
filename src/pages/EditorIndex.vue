@@ -2,7 +2,7 @@
   <div>
     <div class="pb-2">
       <router-link to="/"><i class="bi bi-house"></i> Home</router-link>&nbsp;
-      <router-link to="/liste"><i class="bi bi-card-list"></i> Rezepte</router-link>
+      <router-link to="/rezepte"><i class="bi bi-card-list"></i> Rezepte</router-link>
     </div>
     <div class="input-group">
       <span class="input-group-text">Rezeptname</span>
