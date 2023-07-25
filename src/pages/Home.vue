@@ -3,9 +3,11 @@
     <h1><i class="bi bi-house"></i> Home</h1>
     <div class="container">
       <div class="d-grid gap-2">
-        <button class="btn btn-primary" type="button" @click="navigateTo('/liste')"><i class="bi bi-card-list"></i> Rezepte</button>
+        <button class="btn btn-primary" type="button" @click="navigateTo('/rezepte')"><i class="bi bi-card-list"></i> Rezepte</button>
         <button class="btn btn-primary" type="button" @click="navigateTo('/rezept')"><i class="bi bi-file-earmark-plus-fill"></i> Neues Rezept</button>
+        <button class="btn btn-primary" type="button" @click="navigateTo('/produkte')"><i class="bi bi-card-list"></i> Produkte</button>
         <button class="btn btn-primary" type="button" @click="openNewProduktDialog"><i class="bi bi-cart-plus"></i> Neues Produkt</button>
+        <button class="btn btn-primary" type="button" @click="navigateTo('/materialien')"><i class="bi bi-card-list"></i> Materialien</button>
       </div>
     </div>
     <NewProduktDialog :is-open="newProduktDialogOpen" @close-dialog="closeNewProduktDialog"/>

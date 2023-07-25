@@ -1,7 +1,9 @@
 import {createRouter, createWebHistory} from 'vue-router';
-import Home from "./components/Home.vue";
-import RezeptListe from "./components/RezeptListe.vue";
-import EditorIndex from "./components/editor/EditorIndex.vue";
+import Home from "./pages/Home.vue";
+import RezeptListe from "./pages/Rezepte.vue";
+import EditorIndex from "./pages/EditorIndex.vue";
+import Materialien from "@/pages/Materialien.vue";
+import Produkte from "@/pages/Produkte.vue";
 
 const routes = [
     {
@@ -9,12 +11,20 @@ const routes = [
         component: Home
     },
     {
-        path: '/liste',
+        path: '/rezepte',
         component: RezeptListe
     },
     {
         path: '/rezept/:id?',
         component: EditorIndex
+    },
+    {
+        path: '/materialien/:id?',
+        component: Materialien
+    },
+    {
+        path: '/produkte/:id?',
+        component: Produkte
     }
 ]
 
