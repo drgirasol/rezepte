@@ -6,7 +6,7 @@
         <button class="btn btn-primary" type="button" @click="navigateTo('/rezepte')"><i class="bi bi-card-list"></i> Rezepte</button>
         <button class="btn btn-primary" type="button" @click="navigateTo('/rezept')"><i class="bi bi-file-earmark-plus-fill"></i> Neues Rezept</button>
         <button class="btn btn-primary" type="button" @click="navigateTo('/produkte')"><i class="bi bi-card-list"></i> Produkte</button>
-        <button class="btn btn-primary" type="button" @click="openNewProduktDialog"><i class="bi bi-cart-plus"></i> Neues Produkt</button>
+        <button class="btn btn-primary" type="button" @click="navigateTo('/produkt')"><i class="bi bi-cart-plus"></i> Neues Produkt</button>
         <button class="btn btn-primary" type="button" @click="navigateTo('/materialien')"><i class="bi bi-card-list"></i> Materialien</button>
         <button class="btn btn-primary" type="button" @click="navigateTo('/material')"><i class="bi bi-card-list"></i> Neues Material</button>
       </div>

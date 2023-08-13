@@ -5,6 +5,7 @@ import EditorIndex from "./pages/EditorIndex.vue";
 import Materialien from "@/pages/Materialien.vue";
 import Produkte from "@/pages/Produkte.vue";
 import Material from "@/pages/Material.vue";
+import Produkt from "@/pages/Produkt.vue";
 
 /*
     @Robin: Alle hier verwendeten Komponenten stellen Seiten dar (siehe Verzeichnis "pages") und sind über die entsprechenden Routen (path) erreichbar.
@@ -34,7 +35,11 @@ const routes = [
     {
         path: '/produkte',
         component: Produkte
-    }
+    },
+    {
+        path: '/produkt/:id?',
+        component: Produkt
+    },
 ]
 
 

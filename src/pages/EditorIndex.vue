@@ -180,6 +180,7 @@ export default {
           materialien: [],
           produkte: [],
         })
+        saveRezept()
       },
       async removeProdukt(data) {
         const curSchritt = state.rezept.anleitung.schritte.find(s => s.nr === data.schritt.nr)
